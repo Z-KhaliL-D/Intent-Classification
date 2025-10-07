@@ -55,7 +55,7 @@ project_root/
 
    Make sure this folder contains:
    ```
-   sbert_model
+   sbert_model/
    intent_oos_model.pkl
    label_encoder.pkl
    oos_config.json
@@ -87,6 +87,7 @@ notebook/Intent+OOS_detection.ipynb
 
 After training, export the model as:
 ```
+sbert_model/
 intent_oos_model.pkl
 label_encoder.pkl
 oos_config.json
