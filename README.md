@@ -2,8 +2,8 @@
 
 ## 1. Project Overview
 
-This project implements an **Intent Classification and Out-of-Scope (OOS) Detection** system based on the CLINC OOS-eval dataset.  
-The main objective is to train a model that recognizes user intents accurately while also identifying queries that fall outside known categories (OOS).  
+This project implements an **Intent Classification and Out-of-Scope (OOS) Detection** system based on the CLINC OOS-eval dataset.
+The main objective is to train a model that recognizes user intents accurately while also identifying queries that fall outside known categories (OOS).
 The project demonstrates a complete machine learning workflow — from data preparation to model training, evaluation, and deployment through a Flask backend and React frontend.
 
 Key components include:
@@ -45,9 +45,28 @@ project_root/
    python -m venv venv
    venv\Scripts\activate   # For Windows
    pip install -r requirements.txt
+   ```
+
+2. **IMPORTANT:**  
+   Before running the backend, **unzip the trained model files** into a folder named:
+   ```
+   backend/intent_oos_model/
+   ```
+
+   Make sure this folder contains:
+   ```
+   sbert_model
+   intent_oos_model.pkl
+   label_encoder.pkl
+   oos_config.json
+   ```
+
+3. Start the Flask backend:
+   ```bash
    python app.py
    ```
-2. The backend will start locally at `http://127.0.0.1:5000`.
+
+4. The backend will start locally at `http://127.0.0.1:5000`.
 
 ### 2.3 Frontend Setup
 
@@ -65,6 +84,7 @@ To retrain or fine-tune the model, open the notebook:
 ```
 notebook/Intent+OOS_detection.ipynb
 ```
+
 After training, export the model as:
 ```
 intent_oos_model.pkl
@@ -72,13 +92,18 @@ label_encoder.pkl
 oos_config.json
 ```
 
+Then zip these files if sharing, or unzip them into:
+```
+backend/intent_oos_model/
+```
+
 ---
 
 ## 3. Detailed Approach
 
 ### 3.1 Data
-- Dataset: **CLINC OOS-eval small version**.  
-- Contains multiple domains and intents, plus labeled OOS queries.  
+- Dataset: **CLINC OOS-eval small version**.
+- Contains multiple domains and intents, plus labeled OOS queries.
 - Used combined in-domain and OOS samples for training, validation, and testing.
 
 | Split | Examples |
@@ -107,11 +132,11 @@ oos_config.json
   - Test Accuracy: **0.852**
 
 ### 3.5 OOS Detection Mechanism
-The baseline classifier performs well on known intents but struggles to detect unseen (OOS) queries.  
+The baseline classifier performs well on known intents but struggles to detect unseen (OOS) queries.
 To fix this, we introduced a **confidence-based threshold** mechanism:
 
-- The model’s maximum probability is treated as a confidence score.  
-- If the maximum probability is **below the threshold**, the query is marked as OOS.  
+- The model’s maximum probability is treated as a confidence score.
+- If the maximum probability is **below the threshold**, the query is marked as OOS.
 - The optimal threshold is chosen based on F1-score on the validation set.
 
 **Results:**
@@ -141,7 +166,7 @@ This improves recall significantly, making the system safer and better at flaggi
 
 ## 5. Conclusion and Future Work
 
-This project presents a practical and interpretable approach for **Intent Classification with OOS Detection**.  
+This project presents a practical and interpretable approach for **Intent Classification with OOS Detection**.
 By integrating Sentence-BERT embeddings with a simple Logistic Regression model and confidence-based thresholding, the system achieves reliable and safe performance for real-world applications.
 
 Future extensions could include:
