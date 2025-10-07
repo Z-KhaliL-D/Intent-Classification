@@ -35,20 +35,18 @@ The system includes:
 project_root/
 │
 ├── backend/
-│   ├── app.py                # Flask backend API
-│   ├── requirements.txt      # Backend dependencies
-│   └── intent_oos_model/     # Model and config files
+│   ├── app.py                
+│   ├── requirements.txt     
+│   └── intent_oos_model/     
 │
 ├── frontend/
-│   ├── src/                  # React app source code
-│   ├── package.json          # Frontend dependencies
-│   └── public/               # Static assets
+│   ├── src/                  
+│   ├── package.json          
+│   └── public/               
 │
 ├── notebook/
 │   └── Intent+OOS_detection.ipynb  # Model training and evaluation
-│
-├── model/                    # Optional saved models (if exported separately)
-│
+│               
 ├── .gitignore
 └── README.md
 ```
@@ -88,20 +86,53 @@ npm start
 
 The frontend runs on `http://localhost:3000` and communicates with the Flask API.
 
-## Key Findings
 
-- Sentence-BERT embeddings with Logistic Regression provide strong performance on intent classification.
-- Confidence-based thresholding is effective for OOS detection without additional model components.
-- Validation F1-score determines the optimal threshold, which generalizes well to the test set.
+### 3. Approach
 
-## Challenges
+#### 3.1 Preprocessing
+- Combined in-domain and OOS splits for train, validation, and test.
+- Extracted text and intent labels into pandas DataFrames.
+- Applied label encoding to map intent names into numeric IDs (keeping "oos" for rejection).
+- Prepared clean datasets for Sentence-BERT embeddings.
 
-- Managing class imbalance between in-domain and OOS samples.
-- Ensuring threshold stability across validation and test splits.
-- Handling large model files in GitHub (use Git LFS or exclude in .gitignore).
+#### 3.2 Tokenization
+Sentence-BERT handles tokenization internally by splitting text into subword tokens and converting them into embeddings. It manages casing, punctuation, and subword units automatically. No additional preprocessing was needed, providing consistent semantic representations for all datasets.
 
-## Notes
+#### 3.3 Model & Training
+- Model: Logistic Regression with max_iter=2000
+- Input: SBERT sentence embeddings for train, validation, and test sets
+- Output: Predicted intent class for each query
 
-- The notebook may not render on GitHub due to metadata issues. To fix this, run:
-  `jupyter nbconvert --ClearMetadataPreprocessor.enabled=True --inplace notebook/Intent+OOS_detection.ipynb`
-- All dependencies are listed in `backend/requirements.txt` and `frontend/package.json`.
+Training achieved:
+Validation Accuracy: 0.924
+Test Accuracy: 0.852
+
+#### 3.4 Evaluation
+The baseline model achieves high accuracy on in-domain intents but struggles with OOS detection. This means the system might confidently misclassify unknown queries as valid intents, leading to poor user experience.
+
+OOS detection results before improvement:
+Precision: 0.84
+Recall: 0.59
+F1-score: 0.69
+
+### 4. Improvement: Confidence Thresholding for OOS Detection
+Instead of always accepting the top prediction, we use the model’s maximum probability as a confidence score. If this score is below a chosen threshold, the query is marked as OOS. The threshold is tuned on the validation set by sweeping multiple values and selecting the one with the best F1 score.
+
+This method improves reliability by lowering false in-domain predictions and achieving a better precision–recall balance.
+
+Comparison:
+
+Before Thresholding
+Precision: 0.84
+Recall: 0.59
+F1-score: 0.69
+
+After Thresholding
+Precision: 0.70
+Recall: 0.91
+F1-score: 0.79
+
+### 5. Conclusion & Future Perspectives
+A simple yet effective intent classification pipeline was developed using SBERT embeddings and Logistic Regression. Adding confidence-based thresholding for OOS detection improved robustness, reducing false in-domain predictions and achieving a better precision-recall tradeoff. 
+
+Future improvements include fine-tuning transformer models and testing on larger or noisier datasets to better reflect real-world conditions.
