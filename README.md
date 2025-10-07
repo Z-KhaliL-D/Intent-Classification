@@ -1,138 +1,150 @@
 # Intent Classification and Out-of-Scope (OOS) Detection
 
-## Overview
+## 1. Project Overview
 
-This project implements an Intent Classification and Out-of-Scope (OOS) Detection system using Sentence-BERT (SBERT) embeddings and a Logistic Regression classifier. 
-The model is trained to recognize user intents from text queries and detect queries that are out-of-scope (OOS).
+This project implements an **Intent Classification and Out-of-Scope (OOS) Detection** system based on the CLINC OOS-eval dataset.  
+The main objective is to train a model that recognizes user intents accurately while also identifying queries that fall outside known categories (OOS).  
+The project demonstrates a complete machine learning workflow — from data preparation to model training, evaluation, and deployment through a Flask backend and React frontend.
 
-The system includes:
-- A Jupyter notebook for data preparation, training, and OOS threshold optimization
-- A Flask backend API to serve predictions
-- A simple React frontend for testing and demonstration
+Key components include:
+- A **Jupyter Notebook** for training and evaluation.
+- A **Flask API** serving predictions from the trained model.
+- A **React web interface** for real-time testing of user inputs.
 
-## Approach
+---
 
-1. **Data**
-   - Used the CLINC OOS-eval dataset.
-   - Combined in-domain and OOS samples for training, validation, and testing.
+## 2. How to Run the Project
 
-2. **Embeddings and Model**
-   - Used `all-MiniLM-L6-v2` from Sentence-Transformers to create text embeddings.
-   - Trained a Logistic Regression classifier with `max_iter=2000`.
-
-3. **OOS Detection**
-   - Used classifier probability confidence as a signal for OOS detection.
-   - Determined an optimal threshold on the validation set that maximizes F1-score.
-   - If the model’s max class probability is below the threshold, the query is flagged as OOS.
-
-4. **Evaluation**
-   - Reported accuracy and classification report for intent prediction.
-   - Reported precision, recall, and F1 for binary OOS detection.
-
-## Repository Structure
+### 2.1 Folder Structure
 
 ```
 project_root/
 │
 ├── backend/
-│   ├── app.py                
-│   ├── requirements.txt     
-│   └── intent_oos_model/     
+│   ├── app.py                 # Flask backend
+│   ├── requirements.txt       # Backend dependencies
+│   └── intent_oos_model/      # Trained model and configuration files
 │
 ├── frontend/
-│   ├── src/                  
-│   ├── package.json          
-│   └── public/               
+│   ├── src/                   # React components
+│   ├── public/                # Static assets
+│   └── package.json           # Frontend dependencies
 │
 ├── notebook/
-│   └── Intent+OOS_detection.ipynb  # Model training and evaluation
-│               
+│   └── Intent+OOS_detection.ipynb  # Model training and OOS analysis
+│
 ├── .gitignore
 └── README.md
 ```
 
-## How to Run
+### 2.2 Backend Setup
 
-### 1. Training the Model (Optional)
-Run the Jupyter notebook located at `notebook/Intent+OOS_detection.ipynb` to retrain and export the model.
+1. Navigate to the backend folder:
+   ```bash
+   cd backend
+   python -m venv venv
+   venv\Scripts\activate   # For Windows
+   pip install -r requirements.txt
+   python app.py
+   ```
+2. The backend will start locally at `http://127.0.0.1:5000`.
 
-After training, the model files are saved as:
+### 2.3 Frontend Setup
+
+1. In a new terminal:
+   ```bash
+   cd frontend
+   npm install
+   npm start
+   ```
+2. The React app runs at `http://localhost:3000` and connects to the Flask API.
+
+### 2.4 Model Training (Optional)
+
+To retrain or fine-tune the model, open the notebook:
+```
+notebook/Intent+OOS_detection.ipynb
+```
+After training, export the model as:
 ```
 intent_oos_model.pkl
 label_encoder.pkl
 oos_config.json
 ```
-You can zip and download these for deployment.
 
-### 2. Flask Backend Setup
+---
 
-```
-cd backend
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-python app.py
-```
+## 3. Detailed Approach
 
-The backend will start on `http://127.0.0.1:5000`.
+### 3.1 Data
+- Dataset: **CLINC OOS-eval small version**.  
+- Contains multiple domains and intents, plus labeled OOS queries.  
+- Used combined in-domain and OOS samples for training, validation, and testing.
 
-### 3. React Frontend Setup
+| Split | Examples |
+|-------|-----------|
+| Train | 7,500 |
+| Validation | 3,000 |
+| Test | 4,500 |
 
-```
-cd frontend
-npm install
-npm start
-```
+### 3.2 Preprocessing
+- Combined OOS and in-domain samples per split.
+- Extracted text and intent labels into DataFrames.
+- Applied Label Encoding to map intent names to numeric IDs (keeping “oos” as a special label).
+- Prepared clean text datasets for embedding.
 
-The frontend runs on `http://localhost:3000` and communicates with the Flask API.
+### 3.3 Embedding
+- Used **Sentence-BERT (`all-MiniLM-L6-v2`)** from Sentence-Transformers.
+- Converts each sentence into a 384-dimensional vector embedding.
+- Handles tokenization, casing, and punctuation internally.
 
+### 3.4 Model
+- Classifier: **Logistic Regression** (`max_iter=2000`)
+- Input: SBERT sentence embeddings.
+- Output: Intent label predictions.
+- Achieved:
+  - Validation Accuracy: **0.924**
+  - Test Accuracy: **0.852**
 
-### 3. Approach
+### 3.5 OOS Detection Mechanism
+The baseline classifier performs well on known intents but struggles to detect unseen (OOS) queries.  
+To fix this, we introduced a **confidence-based threshold** mechanism:
 
-#### 3.1 Preprocessing
-- Combined in-domain and OOS splits for train, validation, and test.
-- Extracted text and intent labels into pandas DataFrames.
-- Applied label encoding to map intent names into numeric IDs (keeping "oos" for rejection).
-- Prepared clean datasets for Sentence-BERT embeddings.
+- The model’s maximum probability is treated as a confidence score.  
+- If the maximum probability is **below the threshold**, the query is marked as OOS.  
+- The optimal threshold is chosen based on F1-score on the validation set.
 
-#### 3.2 Tokenization
-Sentence-BERT handles tokenization internally by splitting text into subword tokens and converting them into embeddings. It manages casing, punctuation, and subword units automatically. No additional preprocessing was needed, providing consistent semantic representations for all datasets.
+**Results:**
 
-#### 3.3 Model & Training
-- Model: Logistic Regression with max_iter=2000
-- Input: SBERT sentence embeddings for train, validation, and test sets
-- Output: Predicted intent class for each query
+| Metric | Before Threshold | After Threshold |
+|---------|------------------|-----------------|
+| Precision | 0.84 | 0.70 |
+| Recall | 0.59 | 0.91 |
+| F1-score | 0.69 | 0.79 |
 
-Training achieved:
-Validation Accuracy: 0.924
-Test Accuracy: 0.852
+This improves recall significantly, making the system safer and better at flagging unfamiliar inputs.
 
-#### 3.4 Evaluation
-The baseline model achieves high accuracy on in-domain intents but struggles with OOS detection. This means the system might confidently misclassify unknown queries as valid intents, leading to poor user experience.
+---
 
-OOS detection results before improvement:
-Precision: 0.84
-Recall: 0.59
-F1-score: 0.69
+## 4. Key Findings and Challenges
 
-### 4. Improvement: Confidence Thresholding for OOS Detection
-Instead of always accepting the top prediction, we use the model’s maximum probability as a confidence score. If this score is below a chosen threshold, the query is marked as OOS. The threshold is tuned on the validation set by sweeping multiple values and selecting the one with the best F1 score.
+### Key Findings
+- SBERT embeddings with Logistic Regression are highly effective for intent classification.
+- Confidence thresholding greatly enhances OOS detection robustness.
+- The approach achieves a strong balance between performance and simplicity.
 
-This method improves reliability by lowering false in-domain predictions and achieving a better precision–recall balance.
+### Challenges
+- Handling poor OOS detection.
+- Selecting an optimal threshold that generalizes well.
 
-Comparison:
+---
 
-Before Thresholding
-Precision: 0.84
-Recall: 0.59
-F1-score: 0.69
+## 5. Conclusion and Future Work
 
-After Thresholding
-Precision: 0.70
-Recall: 0.91
-F1-score: 0.79
+This project presents a practical and interpretable approach for **Intent Classification with OOS Detection**.  
+By integrating Sentence-BERT embeddings with a simple Logistic Regression model and confidence-based thresholding, the system achieves reliable and safe performance for real-world applications.
 
-### 5. Conclusion & Future Perspectives
-A simple yet effective intent classification pipeline was developed using SBERT embeddings and Logistic Regression. Adding confidence-based thresholding for OOS detection improved robustness, reducing false in-domain predictions and achieving a better precision-recall tradeoff. 
-
-Future improvements include fine-tuning transformer models and testing on larger or noisier datasets to better reflect real-world conditions.
+Future extensions could include:
+- Fine-tuning transformer models directly on OOS data.
+- Experimenting with ensemble classifiers or neural networks.
+- Evaluating on larger, more diverse conversational datasets.
