@@ -1,0 +1,27 @@
+# Ignore Python virtual environments
+venv/
+backend/venv/
+.env/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Node / React
+frontend/node_modules/
+frontend/build/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Model weights / large files
+*.zip
+*.bin
+*.pkl
+*.pt
+
+# System files
+.DS_Store
+Thumbs.db
